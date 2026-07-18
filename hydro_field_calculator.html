@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hydrogeology Field Calculator — Pump &amp; Slug Test Cheat Sheet</title>
+<style>
+  :root {
+    --ink: #1c2b39;
+    --ink-soft: #4a5b6b;
+    --accent: #2e5fa3;
+    --accent-dark: #1e3f6e;
+    --bg: #f6f7f9;
+    --card-bg: #ffffff;
+    --border: #dde3e9;
+    --eq-bg: #eef3fa;
+    --good: #1b7a3d;
+    --warn: #b3541e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    padding: 0 0 60px 0;
+    line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+    color: white;
+    padding: 28px 24px 22px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 6px; font-size: 1.6rem; }
+  header p { margin: 0; opacity: 0.9; font-size: 0.95rem; max-width: 680px; margin: 0 auto; }
+  nav.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  nav.tabs button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  nav.tabs button.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .intro {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .method-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 22px;
+  }
+  .method-card h2 {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    color: var(--accent-dark);
+  }
+  .method-card .subtitle {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  .equation {
+    background: var(--eq-bg);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    font-family: "Cambria Math", Georgia, serif;
+    font-size: 1.05rem;
+    border-radius: 4px;
+    margin: 10px 0 14px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .explain { font-size: 0.9rem; color: var(--ink-soft); margin-bottom: 14px; }
+  .explain b { color: var(--ink); }
+  .caveat {
+    font-size: 0.82rem;
+    color: var(--warn);
+    background: #fdf3ea;
+    border: 1px solid #f0d9c2;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 10px 0;
+  }
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px 14px;
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 3px;
+  }
+  .field input {
+    width: 100%;
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.92rem;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    font-size: 0.86rem;
+  }
+  table.data-table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.data-table td { padding: 3px 6px; }
+  table.data-table input {
+    width: 100%;
+    padding: 5px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.86rem;
+  }
+  table.data-table button.remove-row {
+    background: none;
+    border: none;
+    color: #b3541e;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .row-btns { display: flex; gap: 8px; margin-bottom: 14px; }
+  button.small-btn {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  button.calc-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 0.92rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.calc-btn:hover { background: var(--accent-dark); }
+  .result-box {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #f2f8f4;
+    border: 1px solid #cbe6d3;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box .r-line { margin: 3px 0; }
+  .result-box .r-line b { color: var(--good); font-size: 1.05rem; }
+  .result-box.error { background: #fbeceb; border-color: #eec4c1; }
+  .result-box.error .r-line b { color: #b3241e; }
+  footer {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 40px;
+    padding: 0 20px;
+  }
+  code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; font-size: 0.88em; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Hydrogeology Field Calculator</h1>
+  <p>An interactive cheat sheet covering pump-test analysis, slug-test analysis, and lithology-to-porosity
+     lookups — the equation, a plain explanation, and a live result for each method. Runs entirely in
+     your browser; nothing gets uploaded anywhere.</p>
+</header>
+
+<nav class="tabs">
+  <button data-tab="tab-pumping" class="active">Pump Test Analysis</button>
+  <button data-tab="tab-slug">Slug Test Analysis</button>
+  <button data-tab="tab-porosity">Lithology &rarr; Porosity</button>
+</nav>
+
+<main>
+
+<!-- ============================== PUMP TEST TAB ============================== -->
+<section id="tab-pumping" class="tab-content active">
+  <div class="intro">
+    All the methods below assume a <b>confined, non-leaky, infinite, homogeneous</b> aquifer — the standard
+    Theis/Jacob assumptions. Run them on an unconfined aquifer without a delayed-yield correction, or near
+    a recharge or barrier boundary, and you'll still get a number out. Whether it's the right number comes
+    down to picking a conceptual model that actually fits your site, and that call is yours to make.
+  </div>
+
+  <!-- Cooper-Jacob -->
+  <div class="method-card" id="card-jacob">
+    <h2>Cooper-Jacob Straight-Line Method</h2>
+    <div class="subtitle">Cooper &amp; Jacob (1946) — the workhorse late-time approximation of the Theis solution</div>
+    <div class="equation">s = (2.303&middot;Q)/(4&pi;T) &middot; log&#8321;&#8320;(t) + b &nbsp;&nbsp;&rarr;&nbsp;&nbsp; T = 2.303&middot;Q / (4&pi;&middot;&Delta;s) &nbsp;&nbsp;&nbsp; S = 2.25&middot;T&middot;t&#8320; / r&sup2;</div>
+    <div class="explain">
+      Plot drawdown <b>s</b> against the <b>log</b> of time since pumping started. Once wellbore storage has
+      died out and before any boundary effect shows up, that plot runs straight: its slope per log cycle
+      (&Delta;s) gives you transmissivity <b>T</b> directly. Where the line would cross s=0 (<b>t&#8320;</b>)
+      gives storativity <b>S</b> — but that only works if drawdown was measured in a real observation well at
+      a known distance <b>r</b>. Well losses and effective-radius uncertainty swamp S when it's calculated
+      from the pumping well's own drawdown, so leave r blank and this tool will report T alone.
+    </div>
+    <div class="caveat">Only valid once u = r&sup2;S/(4Tt) drops below roughly 0.01–0.05 — picking which points
+      count as "late enough" is on you; this tool just fits whatever points you give it.</div>
+    <div class="inputs-grid">
+      <div class="field"><label>Pumping rate Q (m&sup3;/h)</label><input type="number" id="jacob-Q" value="16.67" step="any"></div>
+      <div class="field"><label>Distance to observation well r (m) — leave blank if measured in pumping well</label><input type="number" id="jacob-r" placeholder="optional"></div>
+    </div>
+    <table class="data-table" id="jacob-table">
+      <thead><tr><th style="width:40%">t (days)</th><th style="width:40%">s (m)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="row-btns">
+      <button class="small-btn" onclick="addRow('jacob-table', ['0.5','1.2'])">+ Add row</button>
+      <button class="small-btn" onclick="loadJacobExample()">Load example data</button>
+    </div>
+    <button class="calc-btn" onclick="calcJacob()">Calculate T (and S)</button>
+    <div class="result-box" id="jacob-result"></div>
+  </div>
+
+  <!-- Theis forward -->
+  <div class="method-card" id="card-theis">
+    <h2>Theis Equation (Drawdown Prediction)</h2>
+    <div class="subtitle">Theis (1935) — the non-equilibrium well function, valid at early time too (no Jacob approximation needed)</div>
+    <div class="equation">s(r,t) = Q/(4&pi;T) &middot; W(u) &nbsp;&nbsp;&nbsp; where &nbsp; u = r&sup2;S / (4Tt)</div>
+    <div class="explain">
+      Give it a <b>T</b> and <b>S</b> for the aquifer, known or assumed, and it predicts drawdown <b>s</b>
+      at any distance <b>r</b> and time <b>t</b>. <b>W(u)</b> is the "well function" — the exponential
+      integral E&#8321;(u) — computed here with the standard Abramowitz &amp; Stegun rational approximation,
+      the same one most commercial pump-test software uses under the hood. Handy for predicting interference
+      at a nearby well, or just sanity-checking a T/S pair before you trust it.
+    </div>
+    <div class="inputs-grid">
+      <div class="field"><label>Transmissivity T (m&sup2;/day)</label><input type="number" id="theis-T" value="120"></div>
+      <div class="field"><label>Storativity S (–)</label><input type="number" id="theis-S" value="0.00008" step="any"></div>
+      <div class="field"><label>Pumping rate Q (m&sup3;/h)</label><input type="number" id="theis-Q" value="16.67" step="any"></div>
+      <div class="field"><label>Distance r (m)</label><input type="number" id="theis-r" value="40"></div>
+      <div class="field"><label>Time t (days)</label><input type="number" id="theis-t" value="1" step="any"></div>
+    </div>
+    <button class="calc-btn" onclick="calcTheis()">Calculate drawdown</button>
+    <div class="result-box" id="theis-result"></div>
+  </div>
+
+  <!-- Step drawdown -->
+  <div class="method-card" id="card-step">
+    <h2>Step-Drawdown Test (Jacob Step-Test)</h2>
+    <div class="subtitle">Jacob (1947) — separates aquifer (formation) losses from well (turbulent) losses</div>
+    <div class="equation">s<sub>w</sub> = B&middot;Q + C&middot;Q&sup2; &nbsp;&nbsp;&nbsp;(fit via linear regression of s/Q against Q)</div>
+    <div class="explain">
+      Pump at several increasing rates (steps) and record drawdown at each one. <b>B</b>, the formation-loss
+      coefficient, reflects laminar flow through the aquifer and stays roughly fixed. <b>C</b>, the well-loss
+      coefficient, captures turbulent losses at the screen, gravel pack, and casing — it's really telling you
+      about the well's construction. If well losses make up a big share of the drawdown at your design rate,
+      that points at the well before you start second-guessing the aquifer.
+    </div>
+    <table class="data-table" id="step-table">
+      <thead><tr><th style="width:40%">Q (m&sup3;/h)</th><th style="width:40%">s<sub>w</sub> (m)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="row-btns">
+      <button class="small-btn" onclick="addRow('step-table', ['10','0.8'])">+ Add row</button>
+      <button class="small-btn" onclick="loadStepExample()">Load example data</button>
+    </div>
+    <button class="calc-btn" onclick="calcStep()">Calculate B, C &amp; well-loss %</button>
+    <div class="result-box" id="step-result"></div>
+  </div>
+
+  <!-- Specific capacity -->
+  <div class="method-card" id="card-speccap">
+    <h2>Specific Capacity</h2>
+    <div class="subtitle">The simplest yield metric — how much drawdown per unit of pumping</div>
+    <div class="equation">q = Q / s</div>
+    <div class="explain">
+      A quick way to compare wells, or to track one well's condition over time — declining specific capacity
+      across repeat tests is a classic sign of fouling or clogging. It's construction-dependent though: two
+      wells with identical specific capacity can sit in aquifers of very different transmissivity if they're
+      developed differently, so treat it as a field indicator rather than a stand-in for T.
+    </div>
+    <div class="inputs-grid">
+      <div class="field"><label>Pumping rate Q (m&sup3;/h)</label><input type="number" id="sc-Q" value="20"></div>
+      <div class="field"><label>Drawdown s (m)</label><input type="number" id="sc-s" value="11.6" step="any"></div>
+    </div>
+    <button class="calc-btn" onclick="calcSpecCap()">Calculate</button>
+    <div class="result-box" id="sc-result"></div>
+  </div>
+
+  <!-- Sichardt -->
+  <div class="method-card" id="card-sichardt">
+    <h2>Sichardt's Radius of Influence</h2>
+    <div class="subtitle">Sichardt (empirical) — a fast order-of-magnitude estimate, widely used for a first pass / dewatering design</div>
+    <div class="equation">R = 3000 &middot; s<sub>w</sub> &middot; &radic;k</div>
+    <div class="explain">
+      A purely empirical formula, but still the standard quick estimate for construction dewatering radius.
+      <b>s<sub>w</sub></b> is drawdown at the well (m), <b>k</b> is hydraulic conductivity (m/s). Once you
+      have real T/S from a test, cross-check against the Theis-consistent radius below — the two can land a
+      long way apart, and that's just how these two approaches differ, nothing to worry about.
+    </div>
+    <div class="inputs-grid">
+      <div class="field"><label>Drawdown at well s<sub>w</sub> (m)</label><input type="number" id="sich-sw" value="44.6" step="any"></div>
+      <div class="field"><label>Hydraulic conductivity k (m/s)</label><input type="number" id="sich-k" value="0.0000347" step="any"></div>
+    </div>
+    <button class="calc-btn" onclick="calcSichardt()">Calculate R</button>
+    <div class="result-box" id="sich-result"></div>
+  </div>
+
+  <!-- Theis radius -->
+  <div class="method-card" id="card-theisR">
+    <h2>Theis-Consistent Radius of Influence</h2>
+    <div class="subtitle">Solves the Theis equation for the radius where drawdown falls to a chosen threshold</div>
+    <div class="equation">solve for R: &nbsp; s(R,t) = s<sub>threshold</sub> &nbsp;&nbsp; (root-finding, using the T/S your own test gave you)</div>
+    <div class="explain">
+      Uses the actual T and S from your test instead of Sichardt's generic multiplier, so it's tied to your
+      specific site. <b>Heads up:</b> for transmissive, low-storativity confined aquifers this can come out
+      to several kilometres at a strict threshold like 1&nbsp;cm — that's just how the Theis equation
+      behaves at these parameter values. The threshold you pick is a policy call, and moving it shifts the
+      answer substantially.
+    </div>
+    <div class="inputs-grid">
+      <div class="field"><label>Transmissivity T (m&sup2;/day)</label><input type="number" id="tr-T" value="120"></div>
+      <div class="field"><label>Storativity S (–)</label><input type="number" id="tr-S" value="0.00008" step="any"></div>
+      <div class="field"><label>Pumping rate Q (m&sup3;/h)</label><input type="number" id="tr-Q" value="16.67" step="any"></div>
+      <div class="field"><label>Time t (days)</label><input type="number" id="tr-t" value="8" step="any"></div>
+      <div class="field"><label>Drawdown threshold (m)</label><input type="number" id="tr-thresh" value="0.01" step="any"></div>
+    </div>
+    <button class="calc-btn" onclick="calcTheisRadius()">Calculate R</button>
+    <div class="result-box" id="tr-result"></div>
+  </div>
+</section>
+
+<!-- ============================== SLUG TEST TAB ============================== -->
+<section id="tab-slug" class="tab-content">
+  <div class="intro">
+    Slug tests displace the water level instantaneously — add or remove a solid slug, or do a fast bail —
+    and track how it recovers. Much faster and cheaper than a full pump test, though you're only sampling
+    the aquifer right around the well. Both methods below fit a straight line to the log-normalized
+    recovery curve; where they differ is the setup they're built for: Hvorslev is general-purpose, Bouwer-Rice
+    is built for partially-penetrating wells in unconfined or confined aquifers with a screen.
+  </div>
+
+  <!-- Hvorslev -->
+  <div class="method-card" id="card-hvorslev">
+    <h2>Hvorslev Method (Basic Time Lag)</h2>
+    <div class="subtitle">Hvorslev (1951) — the classic piezometer slug-test method</div>
+    <div class="equation">K = r&sup2;&middot;ln(L<sub>e</sub>/R) / (2&middot;L<sub>e</sub>&middot;T&#8320;) &nbsp;&nbsp;&nbsp; where &nbsp; ln(y/y&#8320;) = &minus;t/T&#8320;</div>
+    <div class="explain">
+      The formula here is the standard long-screen approximation, valid for L<sub>e</sub>/R &ge; 8.
+      <b>r</b> is the casing radius, where the water level actually moves; <b>R</b> is the effective radius
+      of the screen or intake, gravel pack included if there is one; <b>L<sub>e</sub></b> is the screen
+      length. The "basic time lag" <b>T&#8320;</b> comes from plotting the normalized head ratio y/y&#8320;
+      (remaining displacement over initial displacement) against time — this tool fits that line by
+      regressing ln(y/y&#8320;) against t and reports T&#8320; = &minus;1/slope.
+    </div>
+    <div class="inputs-grid">
+      <div class="field"><label>Casing radius r (m)</label><input type="number" id="hv-r" value="0.05" step="any"></div>
+      <div class="field"><label>Effective screen radius R (m)</label><input type="number" id="hv-R" value="0.075" step="any"></div>
+      <div class="field"><label>Screen length L<sub>e</sub> (m)</label><input type="number" id="hv-Le" value="3" step="any"></div>
+      <div class="field"><label>Initial displacement y&#8320; (m)</label><input type="number" id="hv-y0" value="0.5" step="any"></div>
+    </div>
+    <table class="data-table" id="hv-table">
+      <thead><tr><th style="width:40%">t (seconds)</th><th style="width:40%">y (m, remaining displacement)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="row-btns">
+      <button class="small-btn" onclick="addRow('hv-table', ['10','0.35'])">+ Add row</button>
+      <button class="small-btn" onclick="loadHvorslevExample()">Load example data</button>
+    </div>
+    <button class="calc-btn" onclick="calcHvorslev()">Calculate T&#8320; and K</button>
+    <div class="result-box" id="hv-result"></div>
+  </div>
+
+  <!-- Bouwer-Rice -->
+  <div class="method-card" id="card-bouwerrice">
+    <h2>Bouwer-Rice Method</h2>
+    <div class="subtitle">Bouwer &amp; Rice (1976) — for partially-penetrating wells, very common for monitoring-well slug tests</div>
+    <div class="equation">K = r<sub>c</sub>&sup2;&middot;ln(R<sub>e</sub>/r<sub>w</sub>) / (2&middot;L<sub>e</sub>) &middot; (1/t)&middot;ln(y&#8320;/y<sub>t</sub>)</div>
+    <div class="explain">
+      <b>r<sub>c</sub></b> is the casing radius, <b>r<sub>w</sub></b> is the well radius including any
+      filter pack, and <b>L<sub>e</sub></b> is the screen length. Same as Hvorslev, this tool regresses
+      ln(y/y&#8320;) against t to get the recovery rate — the two methods differ in where
+      <b>ln(R<sub>e</sub>/r<sub>w</sub>)</b> comes from, covered below.
+    </div>
+    <div class="caveat">
+      You enter <b>ln(R<sub>e</sub>/r<sub>w</sub>)</b> directly below rather than having this tool derive it.
+      Bouwer &amp; Rice's original method gets that "effective radius" term from empirical type-curves based
+      on well and aquifer geometry — screen length and depth relative to aquifer thickness — and reproducing
+      those curves accurately takes the primary reference (Bouwer, 1989, <i>Ground Water</i> 27(3)) or
+      dedicated software in hand, not something to trust from memory. If you've already pulled
+      ln(R<sub>e</sub>/r<sub>w</sub>) from a published curve, a table, or software like AQTESOLV, enter it
+      here and this tool handles the regression and K arithmetic from there.
+    </div>
+    <div class="inputs-grid">
+      <div class="field"><label>Casing radius r<sub>c</sub> (m)</label><input type="number" id="br-rc" value="0.05" step="any"></div>
+      <div class="field"><label>Screen length L<sub>e</sub> (m)</label><input type="number" id="br-Le" value="3" step="any"></div>
+      <div class="field"><label>ln(R<sub>e</sub>/r<sub>w</sub>) — from published curves/software</label><input type="number" id="br-lnRe" value="2.1" step="any"></div>
+      <div class="field"><label>Initial displacement y&#8320; (m)</label><input type="number" id="br-y0" value="0.5" step="any"></div>
+    </div>
+    <table class="data-table" id="br-table">
+      <thead><tr><th style="width:40%">t (seconds)</th><th style="width:40%">y (m, remaining displacement)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="row-btns">
+      <button class="small-btn" onclick="addRow('br-table', ['10','0.38'])">+ Add row</button>
+      <button class="small-btn" onclick="loadBouwerRiceExample()">Load example data</button>
+    </div>
+    <button class="calc-btn" onclick="calcBouwerRice()">Calculate K</button>
+    <div class="result-box" id="br-result"></div>
+  </div>
+</section>
+
+<!-- ============================== POROSITY TAB ============================== -->
+<section id="tab-porosity" class="tab-content">
+  <div class="intro">
+    Literature ranges of hydraulic conductivity (K) and <b>effective</b> porosity (n<sub>e</sub>) by
+    lithology — n<sub>e</sub> is the value that governs seepage velocity (v = q/n<sub>e</sub>) for particle
+    tracking and travel-time estimates. Worth keeping n<sub>e</sub> and total porosity separate in your
+    head: for clay, most of that pore space is micropores that barely drain, and for karst or fissured
+    rock, flow runs through the fracture network while the rock matrix itself contributes almost nothing.
+    These ranges come from the usual references (Freeze &amp; Cherry's <i>Groundwater</i>, 1979, checked
+    loosely against Domenico &amp; Schwartz and Polish texts), and different textbooks disagree at the
+    margins by a factor of 2–3 for some lithologies — treat these as the commonly-cited ballpark rather
+    than gospel.
+  </div>
+  <div class="method-card" id="card-porosity">
+    <h2>Suggested Effective Porosity</h2>
+    <div class="subtitle">Positions a suggested n<sub>e</sub> within the lithology's literature range, based on where your site's K falls within that lithology's own typical K range</div>
+    <div class="inputs-grid">
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>Lithology</label>
+        <select id="por-lith" style="width:100%; padding:7px 8px; border:1px solid var(--border); border-radius:6px; font-size:0.92rem;"></select>
+      </div>
+      <div class="field"><label>Site hydraulic conductivity K (m/s)</label><input type="number" id="por-K" value="0.0001" step="any"></div>
+    </div>
+    <button class="calc-btn" onclick="calcPorosity()">Suggest n<sub>e</sub></button>
+    <div class="result-box" id="por-result"></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Built on the same closed-form methods used in the automated DH/PRG document pipeline — Theis, Cooper-Jacob,
+  and the well function W(u) via the Abramowitz &amp; Stegun rational approximation, accurate to about
+  2&times;10&#8315;&#8311;, the same one most commercial pump-test software uses under the hood. Everything
+  runs locally; nothing gets uploaded anywhere. It won't replace your own judgment on which conceptual
+  model — confined or unconfined, boundary effects, recharge — actually fits your site.
+</footer>
+
+<script>
+// =====================================================================
+// Core math — ported directly from pump_test_analysis.py, same formulas,
+// same Abramowitz & Stegun coefficients (verified there against known E1
+// reference values: E1(0.1)=1.8229239573905693, E1(1.0)=0.21938393439552029,
+// E1(10.0)=4.156968929685285e-06).
+// =====================================================================
+function wellFunction(u) {
+  if (u <= 1.0) {
+    const x = u;
+    return -Math.log(x) - 0.57721566 + 0.99999193*x - 0.24991055*x*x
+      + 0.05519968*x*x*x - 0.00976004*x*x*x*x + 0.00107857*x*x*x*x*x;
+  } else {
+    const x = u;
+    const x2 = x*x, x3 = x2*x, x4 = x3*x;
+    const num = x4 + 8.5733287401*x3 + 18.0590169730*x2 + 8.6347608925*x + 0.2677737343;
+    const den = x4 + 9.5733223454*x3 + 25.6329561486*x2 + 21.0996530827*x + 3.9584969228;
+    if (x > 700) return 0.0;
+    return (num/den) / (x * Math.exp(x));
+  }
+}
+
+function theisDrawdown(t, T, S, Q, r) {
+  const u = (r*r*S) / (4.0*T*t);
+  return (Q / (4.0*Math.PI*T)) * wellFunction(u);
+}
+
+function linreg(x, y) {
+  const n = x.length;
+  const sx = x.reduce((a,b)=>a+b,0), sy = y.reduce((a,b)=>a+b,0);
+  const sxx = x.reduce((a,b)=>a+b*b,0);
+  let sxy = 0; for (let i=0;i<n;i++) sxy += x[i]*y[i];
+  const slope = (n*sxy - sx*sy) / (n*sxx - sx*sx);
+  const intercept = (sy - slope*sx) / n;
+  return {slope, intercept};
+}
+
+function rSquaredFromResiduals(y, pred) {
+  const mean = y.reduce((a,b)=>a+b,0) / y.length;
+  const ssTot = y.reduce((a,yi)=>a+(yi-mean)*(yi-mean),0);
+  let ssRes = 0; for (let i=0;i<y.length;i++) ssRes += (y[i]-pred[i])*(y[i]-pred[i]);
+  return ssTot > 0 ? 1 - ssRes/ssTot : NaN;
+}
+
+function bisectionRoot(f, lo, hi, tol, maxIter) {
+  let fLo = f(lo), fHi = f(hi);
+  if (fLo * fHi > 0) return null;
+  for (let i=0; i<maxIter; i++) {
+    const mid = 0.5*(lo+hi);
+    const fMid = f(mid);
+    if (Math.abs(fMid) < tol || (hi-lo) < 1e-3) return mid;
+    if (fLo * fMid < 0) { hi = mid; } else { lo = mid; fLo = fMid; }
+  }
+  return 0.5*(lo+hi);
+}
+
+// =====================================================================
+// Small UI helpers: dynamic data-entry tables
+// =====================================================================
+function addRow(tableId, defaults) {
+  const tbody = document.getElementById(tableId).querySelector('tbody');
+  const tr = document.createElement('tr');
+  const v0 = (defaults && defaults[0]) || '';
+  const v1 = (defaults && defaults[1]) || '';
+  tr.innerHTML = `<td><input type="number" step="any" value="${v0}"></td>
+                  <td><input type="number" step="any" value="${v1}"></td>
+                  <td><button class="remove-row" onclick="this.closest('tr').remove()">&times;</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function getTableData(tableId) {
+  const rows = document.getElementById(tableId).querySelectorAll('tbody tr');
+  const col0 = [], col1 = [];
+  rows.forEach(r => {
+    const inputs = r.querySelectorAll('input');
+    const a = parseFloat(inputs[0].value), b = parseFloat(inputs[1].value);
+    if (!isNaN(a) && !isNaN(b)) { col0.push(a); col1.push(b); }
+  });
+  return [col0, col1];
+}
+
+function clearTable(tableId) {
+  document.getElementById(tableId).querySelector('tbody').innerHTML = '';
+}
+
+function showResult(boxId, lines, isError) {
+  const box = document.getElementById(boxId);
+  box.className = 'result-box show' + (isError ? ' error' : '');
+  box.innerHTML = lines.map(l => `<div class="r-line">${l}</div>`).join('');
+}
+
+// =====================================================================
+// Example data loaders
+// =====================================================================
+function loadJacobExample() {
+  clearTable('jacob-table');
+  // Synthetic data generated from the Theis equation itself with T=120 m2/d, S=8e-5,
+  // Q=400 m3/d (=16.67 m3/h), r=40m -- so the Jacob fit below should recover T~120 m2/day.
+  const t = [0.5, 1, 2, 4, 8];
+  const s = [1.8461, 2.0299, 2.2137, 2.3976, 2.5814];
+  t.forEach((ti,i)=>addRow('jacob-table',[ti, s[i]]));
+  document.getElementById('jacob-Q').value = 16.67;
+  document.getElementById('jacob-r').value = 40;
+}
+function loadStepExample() {
+  clearTable('step-table');
+  // B, C fit directly on an m3/h basis (no day conversion needed for this self-contained regression)
+  const Q = [10, 15, 20, 25];
+  const B = 0.05, C = 0.0008;
+  Q.forEach(q => addRow('step-table',[q,(B*q+C*q*q).toFixed(4)]));
+}
+function loadHvorslevExample() {
+  clearTable('hv-table');
+  // synthetic exponential recovery, T0 = 120 s
+  const T0 = 120, y0 = 0.5;
+  [10,30,60,90,150,240].forEach(t => addRow('hv-table',[t,(y0*Math.exp(-t/T0)).toFixed(4)]));
+  document.getElementById('hv-y0').value = y0;
+}
+function loadBouwerRiceExample() {
+  clearTable('br-table');
+  const T0 = 95, y0 = 0.5;
+  [10,30,60,90,150,240].forEach(t => addRow('br-table',[t,(y0*Math.exp(-t/T0)).toFixed(4)]));
+  document.getElementById('br-y0').value = y0;
+}
+
+// =====================================================================
+// Calculators
+// =====================================================================
+function calcJacob() {
+  try {
+    const Qh = parseFloat(document.getElementById('jacob-Q').value);
+    const Q = Qh * 24; // m3/h -> m3/day, since T here comes out in m2/day (t axis is in days)
+    const rStr = document.getElementById('jacob-r').value;
+    const r = rStr === '' ? null : parseFloat(rStr);
+    const [t, s] = getTableData('jacob-table');
+    if (t.length < 2) throw new Error('Need at least 2 data points.');
+    const order = t.map((v,i)=>i).sort((a,b)=>t[a]-t[b]);
+    const tSorted = order.map(i=>t[i]), sSorted = order.map(i=>s[i]);
+    const x = tSorted.map(v=>Math.log10(v));
+    const {slope, intercept} = linreg(x, sSorted);
+    const pred = x.map(xi => slope*xi + intercept);
+    const r2 = rSquaredFromResiduals(sSorted, pred);
+    const T = slope !== 0 ? 2.303*Q/(4*Math.PI*slope) : NaN;
+    const t0 = slope !== 0 ? Math.pow(10, -intercept/slope) : null;
+    let lines = [
+      `Transmissivity <b>T = ${T.toFixed(2)} m&sup2;/day</b>`,
+      `Slope per log-cycle (&Delta;s) = ${slope.toFixed(4)} m, R&sup2; = ${r2.toFixed(4)} (n=${t.length} points)`,
+    ];
+    if (r !== null && t0 !== null && t0 > 0) {
+      const S = 2.25*T*t0/(r*r);
+      lines.push(`Storativity <b>S = ${S.toExponential(3)}</b> (from observation well at r=${r} m — reliable)`);
+    } else {
+      lines.push(`Storativity S not computed: no observation-well distance supplied, or drawdown was measured in the pumping well itself (well losses make S unreliable there).`);
+    }
+    showResult('jacob-result', lines, false);
+  } catch (e) { showResult('jacob-result', ['Error: ' + e.message], true); }
+}
+
+function calcTheis() {
+  try {
+    const T = parseFloat(document.getElementById('theis-T').value);
+    const S = parseFloat(document.getElementById('theis-S').value);
+    const Qh = parseFloat(document.getElementById('theis-Q').value);
+    const Q = Qh * 24; // m3/h -> m3/day, to match T in m2/day and t in days
+    const r = parseFloat(document.getElementById('theis-r').value);
+    const t = parseFloat(document.getElementById('theis-t').value);
+    const u = (r*r*S)/(4*T*t);
+    const s = theisDrawdown(t, T, S, Q, r);
+    showResult('theis-result', [
+      `Predicted drawdown <b>s = ${s.toFixed(4)} m</b>`,
+      `(u = ${u.toExponential(3)}, W(u) = ${wellFunction(u).toFixed(5)})`,
+    ], false);
+  } catch (e) { showResult('theis-result', ['Error: ' + e.message], true); }
+}
+
+function calcStep() {
+  try {
+    const [Q, s] = getTableData('step-table');
+    if (Q.length < 2) throw new Error('Need at least 2 steps (3-4 recommended).');
+    const y = Q.map((q,i)=>s[i]/q);
+    const {slope: C, intercept: B} = linreg(Q, y);
+    const pred = Q.map(q => B*q + C*q*q);
+    const r2 = rSquaredFromResiduals(s, pred);
+    let lines = [
+      `Formation-loss coefficient <b>B = ${B.toExponential(4)}</b> h/m&sup2;`,
+      `Well-loss coefficient <b>C = ${C.toExponential(4)}</b> h&sup2;/m&#8309;, R&sup2; = ${r2.toFixed(4)}`,
+      `<u>% of drawdown from well losses at each step:</u>`,
+    ];
+    Q.forEach((q,i)=>{
+      const wellLoss = C*q*q;
+      const pct = 100*wellLoss/s[i];
+      lines.push(`&nbsp;&nbsp;Q=${q} &rarr; ${pct.toFixed(1)}%`);
+    });
+    showResult('step-result', lines, false);
+  } catch (e) { showResult('step-result', ['Error: ' + e.message], true); }
+}
+
+function calcSpecCap() {
+  try {
+    const Q = parseFloat(document.getElementById('sc-Q').value);
+    const s = parseFloat(document.getElementById('sc-s').value);
+    const q = Q/s;
+    showResult('sc-result', [`Specific capacity <b>q = ${q.toFixed(3)} m&sup3;/h per m</b>`], false);
+  } catch (e) { showResult('sc-result', ['Error: ' + e.message], true); }
+}
+
+function calcSichardt() {
+  try {
+    const sw = parseFloat(document.getElementById('sich-sw').value);
+    const k = parseFloat(document.getElementById('sich-k').value);
+    const R = 3000.0 * sw * Math.sqrt(k);
+    showResult('sich-result', [`Radius of influence <b>R &asymp; ${R.toFixed(0)} m</b>`], false);
+  } catch (e) { showResult('sich-result', ['Error: ' + e.message], true); }
+}
+
+function calcTheisRadius() {
+  try {
+    const T = parseFloat(document.getElementById('tr-T').value);
+    const S = parseFloat(document.getElementById('tr-S').value);
+    const Qh = parseFloat(document.getElementById('tr-Q').value);
+    const Q = Qh * 24; // m3/h -> m3/day, to match T in m2/day and t in days
+    const t = parseFloat(document.getElementById('tr-t').value);
+    const thresh = parseFloat(document.getElementById('tr-thresh').value);
+    const f = (r) => theisDrawdown(t, T, S, Q, r) - thresh;
+    const R = bisectionRoot(f, 0.5, 20000.0, 1e-3, 200);
+    if (R === null) throw new Error('Threshold not bracketed in [0.5, 20000] m — check T/S/Q/t for a scale mismatch.');
+    showResult('tr-result', [`Radius of influence <b>R &asymp; ${R.toFixed(0)} m</b> (at t=${t} d, threshold ${thresh} m)`], false);
+  } catch (e) { showResult('tr-result', ['Error: ' + e.message], true); }
+}
+
+function calcHvorslev() {
+  try {
+    const r = parseFloat(document.getElementById('hv-r').value);
+    const R = parseFloat(document.getElementById('hv-R').value);
+    const Le = parseFloat(document.getElementById('hv-Le').value);
+    const y0 = parseFloat(document.getElementById('hv-y0').value);
+    const [t, y] = getTableData('hv-table');
+    if (t.length < 2) throw new Error('Need at least 2 recovery readings.');
+    const lnRatio = y.map(yi => Math.log(yi/y0));
+    const {slope} = linreg(t, lnRatio);
+    if (slope >= 0) throw new Error('Slope of ln(y/y0) vs t should be negative for a decaying recovery curve — check your data.');
+    const T0 = -1/slope;
+    const K = (r*r*Math.log(Le/R)) / (2*Le*T0);
+    const leOverR = Le/R;
+    let lines = [
+      `Basic time lag <b>T&#8320; = ${T0.toFixed(1)} s</b>`,
+      `Hydraulic conductivity <b>K = ${K.toExponential(3)} m/s</b>`,
+    ];
+    if (leOverR < 8) {
+      lines.push(`<span style="color:#b3541e">Note: L<sub>e</sub>/R = ${leOverR.toFixed(1)} &lt; 8 — the long-screen approximation used here is less accurate at this ratio; consider Hvorslev's alternative shape-factor formula for short screens.</span>`);
+    }
+    showResult('hv-result', lines, false);
+  } catch (e) { showResult('hv-result', ['Error: ' + e.message], true); }
+}
+
+function calcBouwerRice() {
+  try {
+    const rc = parseFloat(document.getElementById('br-rc').value);
+    const Le = parseFloat(document.getElementById('br-Le').value);
+    const lnRe = parseFloat(document.getElementById('br-lnRe').value);
+    const y0 = parseFloat(document.getElementById('br-y0').value);
+    const [t, y] = getTableData('br-table');
+    if (t.length < 2) throw new Error('Need at least 2 recovery readings.');
+    const lnRatio = y.map(yi => Math.log(yi/y0));
+    const {slope} = linreg(t, lnRatio);
+    if (slope >= 0) throw new Error('Slope of ln(y/y0) vs t should be negative for a decaying recovery curve — check your data.');
+    const K = -slope * rc*rc * lnRe / (2*Le);
+    showResult('br-result', [`Hydraulic conductivity <b>K = ${K.toExponential(3)} m/s</b>`], false);
+  } catch (e) { showResult('br-result', ['Error: ' + e.message], true); }
+}
+
+// =====================================================================
+// Lithology -> porosity table — ported directly from lithology_reference.py
+// =====================================================================
+const LITHOLOGY_TABLE = {
+  "Gravel": {kMin:3e-4, kMax:3e-2, neMin:0.15, neMax:0.30, ntMin:0.25, ntMax:0.40,
+    note:"Well-drained, high n_e; poorly-sorted gravel lowers n_e."},
+  "Coarse sand": {kMin:9e-7, kMax:6e-3, neMin:0.15, neMax:0.32, ntMin:0.30, ntMax:0.40,
+    note:"Wide K range depending on sorting and clay content."},
+  "Fine sand": {kMin:2e-7, kMax:2e-4, neMin:0.10, neMax:0.28, ntMin:0.25, ntMax:0.38, note:""},
+  "Silt": {kMin:1e-9, kMax:2e-5, neMin:0.03, neMax:0.12, ntMin:0.35, ntMax:0.50,
+    note:"Large n_total vs n_e gap — most pores are fine and poorly-draining."},
+  "Clay": {kMin:1e-11, kMax:4.7e-9, neMin:0.01, neMax:0.05, ntMin:0.40, ntMax:0.60,
+    note:"High n_total but very low n_e — most water sits in micropores and doesn't flow."},
+  "Glacial till": {kMin:1e-12, kMax:2e-6, neMin:0.05, neMax:0.15, ntMin:0.25, ntMax:0.35,
+    note:"Strongly dependent on compaction and grain-size fraction."},
+  "Fissured/karst limestone": {kMin:1e-6, kMax:2e-2, neMin:0.001, neMax:0.05, ntMin:0.01, ntMax:0.10,
+    note:"n_e dominated by the fracture/conduit network, NOT rock-matrix porosity — highly variable and anisotropic."},
+  "Sandstone": {kMin:3e-10, kMax:6e-6, neMin:0.05, neMax:0.30, ntMin:0.10, ntMax:0.30,
+    note:"Strongly dependent on cementation — poorly-cemented approaches sand."},
+  "Fractured crystalline rock": {kMin:8e-9, kMax:3e-4, neMin:0.00005, neMax:0.01, ntMin:0.001, ntMax:0.02,
+    note:"Flow is almost entirely fracture-controlled; matrix porosity is nearly irrelevant."},
+  "Marl": {kMin:1e-9, kMax:1e-6, neMin:0.01, neMax:0.10, ntMin:0.20, ntMax:0.40,
+    note:"Usually low permeability; fracturing can locally raise K."},
+};
+
+function initPorosityDropdown() {
+  const sel = document.getElementById('por-lith');
+  Object.keys(LITHOLOGY_TABLE).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function calcPorosity() {
+  try {
+    const lith = document.getElementById('por-lith').value;
+    const Ksite = parseFloat(document.getElementById('por-K').value);
+    const r = LITHOLOGY_TABLE[lith];
+    const kLo = Math.log10(r.kMin), kHi = Math.log10(r.kMax);
+    const kClamped = Math.max(Math.min(Ksite, r.kMax), r.kMin);
+    const k = Math.log10(kClamped);
+    const frac = kHi > kLo ? (k-kLo)/(kHi-kLo) : 0.5;
+    const neSuggested = r.neMin + frac*(r.neMax - r.neMin);
+    const inRange = Ksite >= r.kMin && Ksite <= r.kMax;
+    let lines = [
+      `Suggested effective porosity <b>n<sub>e</sub> &asymp; ${neSuggested.toFixed(4)}</b>`,
+      `Literature n<sub>e</sub> range: ${r.neMin}–${r.neMax}, total porosity range: ${r.ntMin}–${r.ntMax}`,
+      `Your K ${inRange ? 'is within' : 'is OUTSIDE'} this lithology's typical K range (${r.kMin.toExponential(0)}–${r.kMax.toExponential(0)} m/s)`,
+    ];
+    if (r.note) lines.push(`<i>${r.note}</i>`);
+    showResult('por-result', lines, false);
+  } catch (e) { showResult('por-result', ['Error: ' + e.message], true); }
+}
+
+// =====================================================================
+// Init
+// =====================================================================
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+loadJacobExample();
+loadStepExample();
+loadHvorslevExample();
+loadBouwerRiceExample();
+initPorosityDropdown();
+</script>
+
+</body>
+</html>
