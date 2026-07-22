@@ -422,18 +422,33 @@
       <b>ln(R<sub>e</sub>/r<sub>w</sub>)</b> comes from, covered below.
     </div>
     <div class="caveat">
-      You enter <b>ln(R<sub>e</sub>/r<sub>w</sub>)</b> directly below rather than having this tool derive it.
-      Bouwer &amp; Rice's original method gets that "effective radius" term from empirical type-curves based
-      on well and aquifer geometry — screen length and depth relative to aquifer thickness — and reproducing
-      those curves accurately takes the primary reference (Bouwer, 1989, <i>Ground Water</i> 27(3)) or
-      dedicated software in hand, not something to trust from memory. If you've already pulled
-      ln(R<sub>e</sub>/r<sub>w</sub>) from a published curve, a table, or software like AQTESOLV, enter it
-      here and this tool handles the regression and K arithmetic from there.
+      Bouwer &amp; Rice's original method gets the <b>ln(R<sub>e</sub>/r<sub>w</sub>)</b> "effective radius" term
+      from empirical type-curves (their 1976 Fig. 3) based on well and aquifer geometry — screen length and
+      depth relative to aquifer thickness. This tool estimates it below using a digitized regression fit to
+      those curves (Karl DeBisschop's fit for the open-source <i>hydrotools</i> slug-test spreadsheet;
+      RMS error 0.017–0.048 across A/B/C, max error under 3%) — good enough for field use, but if you need
+      the primary-reference value exactly (Bouwer, 1989, <i>Ground Water</i> 27(3)) or one pulled from
+      AQTESOLV, just overwrite the ln(R<sub>e</sub>/r<sub>w</sub>) field below with that instead.
+    </div>
+    <div class="method-card" style="background:var(--eq-bg); margin-bottom:14px; padding:14px 16px;">
+      <div class="subtitle" style="margin-bottom:8px;"><b>Estimate ln(R<sub>e</sub>/r<sub>w</sub>) from well geometry</b></div>
+      <div class="inputs-grid">
+        <div class="field"><label>Well radius r<sub>w</sub> (m) — incl. filter pack</label><input type="number" id="br-rw" value="0.075" step="any"></div>
+        <div class="field"><label>Well length L<sub>w</sub> (m) — water table to bottom of well</label><input type="number" id="br-Lw" value="8" step="any"></div>
+        <div class="field"><label>Aquifer thickness H (m)</label><input type="number" id="br-H" value="15" step="any"></div>
+        <div class="field" style="display:flex; align-items:flex-end; gap:6px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--ink-soft);">
+            <input type="checkbox" id="br-fullpen" style="width:auto;"> Screened to aquifer base (fully penetrating)
+          </label>
+        </div>
+      </div>
+      <button class="small-btn" onclick="estimateLnRe()">Estimate ln(R<sub>e</sub>/r<sub>w</sub>)</button>
+      <div class="result-box" id="br-lnre-result"></div>
     </div>
     <div class="inputs-grid">
       <div class="field"><label>Casing radius r<sub>c</sub> (m)</label><input type="number" id="br-rc" value="0.05" step="any"></div>
       <div class="field"><label>Screen length L<sub>e</sub> (m)</label><input type="number" id="br-Le" value="3" step="any"></div>
-      <div class="field"><label>ln(R<sub>e</sub>/r<sub>w</sub>) — from published curves/software</label><input type="number" id="br-lnRe" value="2.1" step="any"></div>
+      <div class="field"><label>ln(R<sub>e</sub>/r<sub>w</sub>) — estimated above, or from published curves/software</label><input type="number" id="br-lnRe" value="2.1" step="any"></div>
       <div class="field"><label>Initial displacement y&#8320; (m)</label><input type="number" id="br-y0" value="0.5" step="any"></div>
     </div>
     <table class="data-table" id="br-table">
@@ -482,9 +497,11 @@
 <footer>
   Built on the same closed-form methods used in the automated DH/PRG document pipeline — Theis, Cooper-Jacob,
   and the well function W(u) via the Abramowitz &amp; Stegun rational approximation, accurate to about
-  2&times;10&#8315;&#8311;, the same one most commercial pump-test software uses under the hood. Everything
-  runs locally; nothing gets uploaded anywhere. It won't replace your own judgment on which conceptual
-  model — confined or unconfined, boundary effects, recharge — actually fits your site.
+  2&times;10&#8315;&#8311;, the same one most commercial pump-test software uses under the hood. The
+  Bouwer-Rice ln(R<sub>e</sub>/r<sub>w</sub>) estimate uses Karl DeBisschop's open-source regression fit to
+  the original Bouwer &amp; Rice (1976) type-curves. Everything runs locally; nothing gets uploaded anywhere.
+  It won't replace your own judgment on which conceptual model — confined or unconfined, boundary effects,
+  recharge — actually fits your site.
 </footer>
 
 <script>
@@ -740,6 +757,63 @@ function calcHvorslev() {
     }
     showResult('hv-result', lines, false);
   } catch (e) { showResult('hv-result', ['Error: ' + e.message], true); }
+}
+
+// =====================================================================
+// Bouwer-Rice A/B/C shape-factor regression — fit by Karl DeBisschop to the
+// digitized Bouwer & Rice (1976, Fig. 3) curves for the "hydrotools" slug-test
+// spreadsheet (GPL, freely reproducible). x = log10(Le/rw). RMS error: 0.017 (A),
+// 0.0059 (B), 0.048 (C) across the fitted data; max error under 3%.
+// =====================================================================
+function brA(x) {
+  if (x < 2.554422663) {
+    return 1.638445671 + 0.166908063*x + 0.000740459*Math.exp(6.17105281*x - 1.054747686*x*x);
+  }
+  return 11.00393028 - 170.7752217*Math.exp(-1.509639982*x);
+}
+function brB(x) {
+  if (x < 2.596774459) {
+    return 0.174811819 + 0.060059188*x + 0.007965502*Math.exp(2.053376868*x - 0.007790328*x*x);
+  }
+  return 4.133124586 - 93.06136936*Math.exp(-1.435370997*x);
+}
+function brC(x) {
+  if (x < 2.200426117) {
+    return 0.074711376 + 1.083958569*x + 0.00557352*Math.exp(2.929493814*x - 0.001028433*x*x);
+  }
+  return 15.66887372 - 178.4329289*Math.exp(-1.322779744*x);
+}
+
+function estimateLnRe() {
+  try {
+    const rw = parseFloat(document.getElementById('br-rw').value);
+    const Lw = parseFloat(document.getElementById('br-Lw').value);
+    const H = parseFloat(document.getElementById('br-H').value);
+    const Le = parseFloat(document.getElementById('br-Le').value);
+    const fullyPenetrating = document.getElementById('br-fullpen').checked;
+    if (!(rw > 0) || !(Lw > 0) || !(Le > 0)) throw new Error('r_w, L_w, and L_e must all be positive.');
+    if (Lw < Le) throw new Error('L_w (water table to bottom of well) should be at least L_e (screen length).');
+
+    const x = Math.log10(Le/rw);
+    const A = brA(x), B = brB(x), C = brC(x);
+
+    let term;
+    if (fullyPenetrating) {
+      term = C / (Le/rw);
+    } else {
+      if (!(H > Lw)) throw new Error('Aquifer thickness H must exceed L_w for a partially penetrating well — check "screened to base" if the well reaches the aquifer bottom.');
+      let lnHLwRw = Math.log((H-Lw)/rw);
+      if (lnHLwRw > 6) lnHLwRw = 6; // Bouwer & Rice (1976) cap for thick aquifers
+      term = (A + B*lnHLwRw) / (Le/rw);
+    }
+    const lnRe = 1 / (1.1/Math.log(Lw/rw) + term);
+
+    document.getElementById('br-lnRe').value = lnRe.toFixed(4);
+    showResult('br-lnre-result', [
+      `Estimated <b>ln(R<sub>e</sub>/r<sub>w</sub>) = ${lnRe.toFixed(4)}</b> — filled into the field below`,
+      `(x=log&#8321;&#8320;(L<sub>e</sub>/r<sub>w</sub>)=${x.toFixed(3)}, A=${A.toFixed(3)}, B=${B.toFixed(3)}, C=${C.toFixed(3)}, ${fullyPenetrating ? 'fully penetrating' : 'partially penetrating'})`,
+    ], false);
+  } catch (e) { showResult('br-lnre-result', ['Error: ' + e.message], true); }
 }
 
 function calcBouwerRice() {
